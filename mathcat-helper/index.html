@@ -199,6 +199,28 @@
 
   footer { text-align: center; color: var(--muted); font-size: 0.78rem; padding: 24px; }
 
+  /* ── TIMER ── */
+  #timer-widget {
+    position: fixed; bottom: 24px; right: 16px;
+    background: white; border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+    padding: 10px 14px; text-align: center;
+    z-index: 1000; min-width: 86px;
+  }
+  #timer-display {
+    font-size: 1.7rem; font-weight: 700; color: var(--orange);
+    font-variant-numeric: tabular-nums; letter-spacing: 1px; line-height: 1;
+  }
+  #timer-display.done { color: #e53935; animation: pulse 0.7s ease-in-out infinite alternate; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.4; } }
+  #timer-controls { display: flex; gap: 6px; margin-top: 8px; justify-content: center; }
+  .timer-btn {
+    border: 2px solid var(--orange); background: white; color: var(--orange);
+    border-radius: 8px; padding: 4px 10px; font-size: 0.82rem;
+    font-weight: 700; cursor: pointer; transition: all 0.15s;
+  }
+  .timer-btn.active { background: var(--orange); color: white; }
+
   /* ── RULE CHIPS ── */
   .rule-chip {
     background: #fff3e0; border: 1px solid #ffe0b2; border-radius: 20px;
@@ -332,6 +354,13 @@
 </div>
 
 <footer>🐾 Math Cat Helper &nbsp;·&nbsp; Operations: + − × ÷ &nbsp;·&nbsp; Targets: 6 – 20</footer>
+<div id="timer-widget">
+  <div id="timer-display">1:00</div>
+  <div id="timer-controls">
+    <button class="timer-btn" id="timer-toggle" onclick="timerToggle()">▶ Start</button>
+    <button class="timer-btn" onclick="timerRestart()">↺</button>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -802,6 +831,45 @@ function toast(msg) {
   el.style.opacity = '1';
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.style.opacity = '0', 2800);
+}
+
+// ═══════════════════════════════════════════
+//  TIMER
+// ═══════════════════════════════════════════
+let timerSecs    = 60;
+let timerRunning = false;
+let timerInterval = null;
+
+function timerRender() {
+  const m = Math.floor(timerSecs / 60);
+  const s = timerSecs % 60;
+  const display = document.getElementById('timer-display');
+  const toggle  = document.getElementById('timer-toggle');
+  display.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+  display.classList.toggle('done', timerSecs === 0);
+  toggle.textContent = timerRunning ? '⏸ Stop' : '▶ Start';
+  toggle.classList.toggle('active', timerRunning);
+}
+
+function timerToggle() {
+  if (timerSecs === 0) { timerSecs = 60; }
+  timerRunning = !timerRunning;
+  clearInterval(timerInterval);
+  if (timerRunning) timerInterval = setInterval(timerTick, 1000);
+  timerRender();
+}
+
+function timerRestart() {
+  clearInterval(timerInterval);
+  timerSecs    = 60;
+  timerRunning = true;
+  timerInterval = setInterval(timerTick, 1000);
+  timerRender();
+}
+
+function timerTick() {
+  if (timerSecs > 0) { timerSecs--; timerRender(); }
+  else { clearInterval(timerInterval); timerRunning = false; timerRender(); }
 }
 
 // ── Start ──
