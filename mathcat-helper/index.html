@@ -276,44 +276,58 @@
   </div>
 
   <div class="card">
-    <h2>🐾 Difficulty Level</h2>
-    <div class="difficulty-btns">
-      <button class="diff-btn selected" data-diff="1" onclick="selectDiff(1)">
-        <div class="diff-label">😺 Easy</div>
-        <div class="diff-desc">+ and − only</div>
-      </button>
-      <button class="diff-btn" data-diff="2" onclick="selectDiff(2)">
-        <div class="diff-label">😼 Medium</div>
-        <div class="diff-desc">Uses × or ÷</div>
-      </button>
-      <button class="diff-btn" data-diff="3" onclick="selectDiff(3)">
-        <div class="diff-label">😈 Hard</div>
-        <div class="diff-desc">Complex expressions</div>
-      </button>
+      <h2>🐾 Difficulty Level</h2>
+      <div class="difficulty-btns">
+        <button class="diff-btn selected" data-level="easy" onclick="selectLevel('easy')">
+          <div class="diff-label">😺 Easy</div>
+          <div class="diff-desc">Addition only · 4 cards</div>
+        </button>
+        <button class="diff-btn" data-level="medium" onclick="selectLevel('medium')">
+          <div class="diff-label">😼 Medium</div>
+          <div class="diff-desc">All ops · 5 cards</div>
+        </button>
+        <button class="diff-btn" data-level="hard" onclick="selectLevel('hard')">
+          <div class="diff-label">😈 Hard</div>
+          <div class="diff-desc">Complex · 6 cards</div>
+        </button>
+      </div>
+      <div class="level-toggles" data-level="easy">
+        <label class="toggle-label">
+          <input type="checkbox" id="toggle-subtraction"
+                 onchange="easySubtraction = this.checked">
+          Include subtraction (−)
+        </label>
+      </div>
+      <div class="level-toggles" data-level="medium" style="display:none">
+        <label class="toggle-label">
+          <input type="checkbox" id="toggle-all-cards"
+                 onchange="mediumAllCards = this.checked">
+          Must use all 5 cards
+        </label>
+      </div>
     </div>
-  </div>
 
   <div style="text-align:center;margin-bottom:20px;">
     <button class="btn-primary" id="gen-btn" onclick="runGenerator()">🎲 Generate Puzzle</button>
   </div>
 
   <div class="card" id="puzzle-output" style="display:none">
-    <h2>🐾 Your Puzzle</h2>
-    <div class="puzzle-box">
-      <div class="puzzle-target" id="puzzle-target-num"></div>
-      <div class="puzzle-target-label">🐱 Cat Card Target</div>
-      <div class="puzzle-cards" id="puzzle-cards"></div>
-    </div>
-    <div style="text-align:center;margin-top:18px;">
-      <button class="btn-primary btn-green" id="show-sol-btn" onclick="toggleSolution()">
-        👁 Show Answer
-      </button>
-      <div id="solution-area" style="margin-top:14px;display:none">
-        <div class="result-header" style="text-align:center;">One possible answer:</div>
-        <span class="solution-text" id="puzzle-solution"></span>
+      <h2>🐾 Your Puzzle</h2>
+      <div class="puzzle-box">
+        <div class="puzzle-target" id="puzzle-target-num"></div>
+        <div class="puzzle-target-label">🐱 Cat Card Target</div>
+        <div class="puzzle-cards" id="puzzle-cards"></div>
+      </div>
+      <div id="puzzle-chips"
+           style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;">
+      </div>
+      <div style="text-align:center;margin-top:18px;">
+        <button class="btn-primary btn-green" id="reveal-btn" onclick="revealSolutions()">
+          👁 Reveal All
+        </button>
+        <div id="solution-area" style="margin-top:14px;display:none"></div>
       </div>
     </div>
-  </div>
 
 </div>
 
