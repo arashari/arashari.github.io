@@ -313,6 +313,7 @@ const MAX_EACH   = 6;
 const MAX_HAND   = 6;
 const TARGET_MIN = 6;
 const TARGET_MAX = 20;
+const HAND_SIZES = { easy: 4, medium: 5, hard: 6 };
 
 let solverTarget = TARGET_MIN;
 let genTarget    = TARGET_MIN;
@@ -535,13 +536,12 @@ function selectDiff(level) {
   );
 }
 
-// Score a solution expression for difficulty classification.
-function scoreExpr(expr) {
-  return {
-    hasMultDiv : /[×÷]/.test(expr),
-    numCount   : (expr.match(/\d+/g) || []).length,
-    parenDepth : maxParenDepth(expr),
-  };
+function countNums(expr) {
+  return (expr.match(/\d+/g) || []).length;
+}
+
+function countMultDiv(expr) {
+  return (expr.match(/[×÷]/g) || []).length;
 }
 
 function maxParenDepth(expr) {
@@ -551,14 +551,6 @@ function maxParenDepth(expr) {
     else if (ch === ')') depth--;
   }
   return max;
-}
-
-function matchesDiff(expr, diff) {
-  const s = scoreExpr(expr);
-  if (diff === 1) return !s.hasMultDiv;
-  if (diff === 2) return s.hasMultDiv && s.numCount <= 4;
-  if (diff === 3) return s.hasMultDiv && (s.numCount >= 4 || s.parenDepth >= 2);
-  return true;
 }
 
 // Build a random hand drawn from the bait pool.
