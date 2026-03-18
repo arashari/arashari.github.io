@@ -317,7 +317,10 @@ const HAND_SIZES = { easy: 4, medium: 5, hard: 6 };
 
 let solverTarget = TARGET_MIN;
 let genTarget    = TARGET_MIN;
-let selectedDiff = 1;
+let selectedLevel      = 'easy';
+let easySubtraction    = false;
+let mediumAllCards     = false;
+let lastPuzzleSolutions = [];
 let hand         = [];   // array of numbers (may repeat)
 
 // ═══════════════════════════════════════════
@@ -529,11 +532,41 @@ function runSolver() {
 // ═══════════════════════════════════════════
 //  PUZZLE GENERATOR
 // ═══════════════════════════════════════════
-function selectDiff(level) {
-  selectedDiff = level;
+function selectLevel(level) {
+  selectedLevel   = level;
+  easySubtraction = false;
+  mediumAllCards  = false;
+
   document.querySelectorAll('.diff-btn').forEach(b =>
-    b.classList.toggle('selected', +b.dataset.diff === level)
+    b.classList.toggle('selected', b.dataset.level === level)
   );
+  document.querySelectorAll('.level-toggles').forEach(el =>
+    el.style.display = el.dataset.level === level ? 'block' : 'none'
+  );
+
+  const st = document.getElementById('toggle-subtraction');
+  const mt = document.getElementById('toggle-all-cards');
+  if (st) st.checked = false;
+  if (mt) mt.checked = false;
+}
+
+function filterSolutions(sols, handSize) {
+  if (selectedLevel === 'easy') {
+    if (!easySubtraction) return sols.filter(s => !/-/.test(s));
+    return sols;
+  }
+  if (selectedLevel === 'medium') {
+    if (mediumAllCards) return sols.filter(s => countNums(s) === handSize);
+    return sols;
+  }
+  if (selectedLevel === 'hard') {
+    return sols.filter(s =>
+      countNums(s) === handSize &&
+      maxParenDepth(s) >= 2     &&
+      countMultDiv(s) >= 2
+    );
+  }
+  return sols;
 }
 
 function countNums(expr) {
