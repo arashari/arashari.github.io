@@ -513,7 +513,7 @@ function stripOuter(expr) {
 function searchNodes(nodes, target, out) {
   if (nodes.length === 1) {
     if (Number.isFinite(nodes[0].val) && Math.abs(nodes[0].val - target) < 1e-9)
-      out.add(stripOuter(nodes[0].expr));
+      out.add(stripOuter(normalizeExpr(nodes[0].expr)));
     return;
   }
   for (let i = 0; i < nodes.length; i++) {
@@ -678,6 +678,48 @@ function hasTrivialPadding(expr) {
   if (op === '+' && (lv === 0 || rv === 0)) return true;
   if (op === '-' && rv === 0) return true;
   return hasTrivialPadding(L) || hasTrivialPadding(R);
+}
+
+// Collect all operands in a chain of the same commutative op at the top level.
+// E.g. collectOp('(3+5)+9', '+') → ['3','5','9']
+function collectOp(expr, op) {
+  expr = stripOuter(expr.trim());
+  if (/^\d+$/.test(expr)) return [expr];
+  let depth = 0, mainOp = -1;
+  for (let i = 0; i < expr.length; i++) {
+    const ch = expr[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    else if (depth === 0 && (ch === '+' || ch === '-' || ch === '×' || ch === '÷'))
+      mainOp = i;
+  }
+  if (mainOp === -1 || expr[mainOp] !== op) return [expr];
+  return collectOp(expr.slice(0, mainOp), op)
+    .concat(collectOp(expr.slice(mainOp + 1), op));
+}
+
+// Canonical form: flatten +/× chains, sort operands, rebuild left-associatively.
+// (3+5)+9 and (5+9)+3 both become (3+5)+9.
+function normalizeExpr(expr) {
+  expr = stripOuter(expr.trim());
+  if (/^\d+$/.test(expr)) return expr;
+  let depth = 0, mainOp = -1;
+  for (let i = 0; i < expr.length; i++) {
+    const ch = expr[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    else if (depth === 0 && (ch === '+' || ch === '-' || ch === '×' || ch === '÷'))
+      mainOp = i;
+  }
+  if (mainOp === -1) return expr;
+  const op = expr[mainOp];
+  if (op === '+' || op === '×') {
+    const parts = collectOp(expr, op).map(normalizeExpr).sort();
+    return parts.reduce((acc, cur) => acc === null ? cur : `(${acc}${op}${cur})`, null);
+  }
+  const L = normalizeExpr(expr.slice(0, mainOp));
+  const R = normalizeExpr(expr.slice(mainOp + 1));
+  return `(${L}${op}${R})`;
 }
 
 function maxParenDepth(expr) {
