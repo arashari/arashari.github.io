@@ -6,7 +6,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff7043">
 <link rel="apple-touch-icon" href="icon.svg">
-<title>🐱 Math Cat Helper</title>
+<title>#mathcat</title>
 <style>
   :root {
     --orange: #ff7043;
@@ -219,7 +219,7 @@
 <body>
 
 <header>
-  <h1>🐱 Math Cat Helper</h1>
+  <h1>#mathcat</h1>
   <p>Solver &amp; Puzzle Generator · Bait numbers: 1, 2, 3, 5, 7, 9 · Targets: 6 – 20</p>
 </header>
 
@@ -331,7 +331,7 @@
 
 </div>
 
-<footer>🐾 Math Cat Helper &nbsp;·&nbsp; Operations: + − × ÷ &nbsp;·&nbsp; Targets: 6 – 20</footer>
+<footer>#mathcat &nbsp;·&nbsp; Operations: + − × ÷ &nbsp;·&nbsp; Targets: 6 – 20</footer>
 <div id="toast"></div>
 
 <script>
@@ -582,21 +582,19 @@ function selectLevel(level) {
 
 function filterSolutions(sols, handSize) {
   if (selectedLevel === 'easy') {
-    if (!easySubtraction) return sols.filter(s => !/-/.test(s));
-    return sols;
-  }
-  if (selectedLevel === 'medium') {
-    if (mediumAllCards) return sols.filter(s => countNums(s) === handSize);
-    return sols;
-  }
-  if (selectedLevel === 'hard') {
-    return sols.filter(s =>
+    sols = easySubtraction
+      ? sols.filter(s => !/[×÷]/.test(s))
+      : sols.filter(s => !/[-×÷]/.test(s));
+  } else if (selectedLevel === 'medium') {
+    if (mediumAllCards) sols = sols.filter(s => countNums(s) === handSize);
+  } else if (selectedLevel === 'hard') {
+    sols = sols.filter(s =>
       countNums(s) === handSize &&
       maxParenDepth(s) >= 2     &&
       countMultDiv(s) >= 2
     );
   }
-  return sols;
+  return sols.filter(s => !hasTrivialPadding(s)).slice(0, 10);
 }
 
 function countNums(expr) {
@@ -605,6 +603,52 @@ function countNums(expr) {
 
 function countMultDiv(expr) {
   return (expr.match(/[×÷]/g) || []).length;
+}
+
+function evalExpr(expr) {
+  expr = stripOuter(expr.trim());
+  if (/^\d+$/.test(expr)) return +expr;
+  let depth = 0, lastOp = -1;
+  for (let i = 0; i < expr.length; i++) {
+    const ch = expr[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    else if (depth === 0 && (ch === '+' || ch === '-' || ch === '×' || ch === '÷'))
+      lastOp = i;
+  }
+  if (lastOp === -1) return +expr;
+  const L = evalExpr(expr.slice(0, lastOp));
+  const R = evalExpr(expr.slice(lastOp + 1));
+  const op = expr[lastOp];
+  if (op === '+') return L + R;
+  if (op === '-') return L - R;
+  if (op === '×') return L * R;
+  if (op === '÷') return R !== 0 ? L / R : NaN;
+  return NaN;
+}
+
+function hasTrivialPadding(expr) {
+  expr = stripOuter(expr.trim());
+  if (/^\d+$/.test(expr)) return false;
+  let depth = 0, lastOp = -1;
+  for (let i = 0; i < expr.length; i++) {
+    const ch = expr[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    else if (depth === 0 && (ch === '+' || ch === '-' || ch === '×' || ch === '÷'))
+      lastOp = i;
+  }
+  if (lastOp === -1) return false;
+  const L = expr.slice(0, lastOp);
+  const R = expr.slice(lastOp + 1);
+  const op = expr[lastOp];
+  const lv = evalExpr(L);
+  const rv = evalExpr(R);
+  if (op === '×' && (lv === 1 || rv === 1)) return true;
+  if (op === '÷' && rv === 1) return true;
+  if (op === '+' && (lv === 0 || rv === 0)) return true;
+  if (op === '-' && rv === 0) return true;
+  return hasTrivialPadding(L) || hasTrivialPadding(R);
 }
 
 function maxParenDepth(expr) {

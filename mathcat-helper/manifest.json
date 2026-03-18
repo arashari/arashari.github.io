@@ -1,6 +1,6 @@
 {
-  "name": "Math Cat Helper",
-  "short_name": "Math Cat",
+  "name": "#mathcat",
+  "short_name": "#mathcat",
   "description": "Solver & Puzzle Generator for Math Cat card game",
   "start_url": "/mathcat-helper/",
   "scope": "/mathcat-helper/",
