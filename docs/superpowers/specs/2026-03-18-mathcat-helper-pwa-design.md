@@ -30,6 +30,8 @@ An SVG icon with:
 
 Used as the home screen icon. One SVG file covers all sizes via `sizes="any"` in the manifest.
 
+**iOS note:** Safari ignores the manifest and requires a PNG for `apple-touch-icon`. Using an SVG here means iOS will fall back to a screenshot-based icon. This is an accepted limitation for this implementation. A future iteration could add a 180×180 PNG to improve iOS home screen appearance.
+
 ### New: `mathcat-helper/manifest.json`
 
 ```json
@@ -38,6 +40,7 @@ Used as the home screen icon. One SVG file covers all sizes via `sizes="any"` in
   "short_name": "Math Cat",
   "description": "Solver & Puzzle Generator for Math Cat card game",
   "start_url": "/mathcat-helper/",
+  "scope": "/mathcat-helper/",
   "display": "standalone",
   "background_color": "#fff8f0",
   "theme_color": "#ff7043",
@@ -47,13 +50,16 @@ Used as the home screen icon. One SVG file covers all sizes via `sizes="any"` in
 }
 ```
 
+`scope` is explicitly set to `/mathcat-helper/` (rather than relying on the default) so install behavior is predictable if the manifest path ever changes.
+
 ### New: `mathcat-helper/sw.js`
 
-Cache-first service worker:
+Cache-first service worker with three event handlers:
 
 - **Install event:** Pre-caches `./`, `./manifest.json`, `./icon.svg`
+- **Activate event:** Iterates `caches.keys()`, deletes any cache whose name doesn't match the current `CACHE_NAME` constant, then calls `self.clients.claim()` so the new SW takes control of open pages immediately
 - **Fetch event:** Serves from cache first; falls back to network if not cached
-- **Cache name:** `mathcat-v1` (bump version to force cache refresh on updates)
+- **Cache name:** `mathcat-v1` (bump string to force full cache refresh on updates)
 - Scope is limited to `/mathcat-helper/` automatically (sw.js lives there)
 
 ### Modified: `mathcat-helper/index.html`
@@ -69,7 +75,8 @@ Add before `</body>`:
 ```html
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
+    navigator.serviceWorker.register('sw.js')
+      .catch(err => console.warn('SW registration failed:', err));
   }
 </script>
 ```
@@ -84,7 +91,7 @@ Add before `</body>`:
 | Subsequent visits (online) | Served from cache instantly |
 | Visit while offline | Served from cache, fully functional |
 | Install to home screen | Standalone mode, no browser chrome, orange theme |
-| App update (bump `mathcat-v1` → `mathcat-v2`) | Old cache deleted, new files fetched |
+| App update (bump `mathcat-v1` → `mathcat-v2`) | Old cache deleted on activate, new files fetched |
 
 ---
 
@@ -92,5 +99,6 @@ Add before `</body>`:
 
 - No build system, no npm — all vanilla
 - No change to existing CSS/JS/HTML structure
+- This repo (`arashari.github.io`) is a **user/org GitHub Pages site** that deploys from the repo root at `https://arashari.github.io/`. The `mathcat-helper` directory is served at `https://arashari.github.io/mathcat-helper/`, making `/mathcat-helper/` the correct absolute path for `start_url` and `scope`
 - GitHub Pages serves over HTTPS — service workers work without any config
-- `start_url: /mathcat-helper/` matches the GitHub Pages deployment path for `arashari.github.io`
+- iOS Safari does not support SVG `apple-touch-icon`; the iOS home screen icon will be a screenshot fallback (accepted limitation)
