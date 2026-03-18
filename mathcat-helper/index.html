@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff7043">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>🐱 Math Cat Helper</title>
 <style>
   :root {
@@ -655,6 +658,12 @@ function toast(msg) {
 
 // ── Start ──
 init();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .catch(err => console.warn('SW registration failed:', err));
+  }
 </script>
 </body>
 </html>
