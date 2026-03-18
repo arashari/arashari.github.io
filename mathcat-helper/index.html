@@ -607,56 +607,105 @@ function runGenerator() {
   const btn = document.getElementById('gen-btn');
   btn.disabled = true;
   btn.innerHTML = '🎲 Generating<span class="spinner"></span>';
-
   document.getElementById('puzzle-output').style.display = 'none';
-  document.getElementById('solution-area').style.display = 'none';
-  document.getElementById('show-sol-btn').textContent = '👁 Show Answer';
 
   setTimeout(() => {
-    // Difficulty → hand size (fewer cards = harder)
-    const sizes = { 1: 6, 2: 5, 3: 4 };
-    const size  = sizes[selectedDiff] || 5;
+    const size = HAND_SIZES[selectedLevel];
+    const FAIL = {
+      easy:   `😿 No Easy puzzle found for target ${genTarget}. Try a different target.`,
+      medium: `😿 No Medium puzzle found for target ${genTarget}. Try different settings.`,
+      hard:   `😿 No Hard puzzle found for target ${genTarget}. Try a different target.`,
+    };
 
     let found = null;
     for (let attempt = 0; attempt < 800 && !found; attempt++) {
       const h    = randomHand(size);
-      const sols = solveHand(h, genTarget);
-      const ok   = sols.filter(s => matchesDiff(s, selectedDiff));
-      if (ok.length > 0) found = { hand: h, solution: ok[0] };
+      const sols = filterSolutions(solveHand(h, genTarget), size);
+      if (sols.length > 0) found = { hand: h, solutions: sols };
     }
 
     btn.disabled = false;
     btn.innerHTML = '🎲 Generate Puzzle';
 
     if (!found) {
-      toast(`😿 No ${['','Easy','Medium','Hard'][selectedDiff]} puzzle found for target ${genTarget}. Try a different difficulty or target.`);
+      toast(FAIL[selectedLevel]);
       return;
     }
 
-    // Render puzzle
-    document.getElementById('puzzle-target-num').textContent = genTarget;
-
-    const cardsEl = document.getElementById('puzzle-cards');
-    cardsEl.innerHTML = '';
-    [...found.hand].sort((a, b) => a - b).forEach(n => {
-      const div = document.createElement('div');
-      div.className = 'puzzle-card';
-      div.textContent = n;
-      cardsEl.appendChild(div);
-    });
-
-    document.getElementById('puzzle-solution').textContent = `${found.solution} = ${genTarget}`;
-    document.getElementById('puzzle-output').style.display = 'block';
-    document.getElementById('puzzle-output').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    renderPuzzle(found.hand, found.solutions);
   }, 60);
 }
 
-function toggleSolution() {
+function renderPuzzle(hand, solutions) {
+  lastPuzzleSolutions = solutions;
+
+  document.getElementById('puzzle-target-num').textContent = genTarget;
+
+  const cardsEl = document.getElementById('puzzle-cards');
+  cardsEl.innerHTML = '';
+  [...hand].sort((a, b) => a - b).forEach(n => {
+    const div = document.createElement('div');
+    div.className = 'puzzle-card';
+    div.textContent = n;
+    cardsEl.appendChild(div);
+  });
+
+  renderChips();
+
+  document.getElementById('reveal-btn').style.display = 'inline-block';
   const area = document.getElementById('solution-area');
-  const btn  = document.getElementById('show-sol-btn');
-  const showing = area.style.display !== 'none';
-  area.style.display = showing ? 'none' : 'block';
-  btn.textContent = showing ? '👁 Show Answer' : '🙈 Hide Answer';
+  area.style.display = 'none';
+  area.innerHTML = '';
+
+  document.getElementById('puzzle-output').style.display = 'block';
+  document.getElementById('puzzle-output').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderChips() {
+  const chipsEl = document.getElementById('puzzle-chips');
+  chipsEl.innerHTML = '';
+
+  const ops   = selectedLevel === 'easy'
+    ? (easySubtraction ? '+ −' : '+')
+    : '+ − × ÷';
+  const cards = selectedLevel === 'hard' || (selectedLevel === 'medium' && mediumAllCards)
+    ? `all ${HAND_SIZES[selectedLevel]} cards`
+    : 'any cards';
+
+  [ops, cards, ...(selectedLevel === 'hard' ? ['complex'] : [])].forEach(text => {
+    const span = document.createElement('span');
+    span.className = 'rule-chip';
+    span.textContent = text;
+    if (text === 'complex') span.title = 'depth ≥ 2, uses 2+ × or ÷';
+    chipsEl.appendChild(span);
+  });
+}
+
+function revealSolutions() {
+  document.getElementById('reveal-btn').style.display = 'none';
+  const area = document.getElementById('solution-area');
+
+  if (lastPuzzleSolutions.length === 0) {
+    area.innerHTML = '<div class="no-solution">😿 No solutions found.</div>';
+  } else {
+    const hdr = document.createElement('div');
+    hdr.className = 'result-header';
+    hdr.textContent = `🎉 ${lastPuzzleSolutions.length} solution${lastPuzzleSolutions.length !== 1 ? 's' : ''}:`;
+
+    const list = document.createElement('div');
+    list.className = 'solution-list';
+    lastPuzzleSolutions.forEach(s => {
+      const chip = document.createElement('span');
+      chip.className = 'solution-chip';
+      chip.textContent = `${s} = ${genTarget}`;
+      list.appendChild(chip);
+    });
+
+    area.innerHTML = '';
+    area.appendChild(hdr);
+    area.appendChild(list);
+  }
+  area.style.display = 'block';
 }
 
 // ═══════════════════════════════════════════
